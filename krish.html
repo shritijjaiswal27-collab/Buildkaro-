@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildKaro! - AI Construction Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+        
+        .gantt-bar {
+            transition: all 0.3s ease;
+        }
+        
+        .gantt-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+        }
+        
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+        
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .robot-mascot {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body class="gradient-bg min-h-screen text-white overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center pulse-ring">
+                        <i class="fas fa-hard-hat text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                        BuildKaro!
+                    </span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="resetProject()" class="px-4 py-2 text-sm text-slate-300 hover:text-white transition">
+                        <i class="fas fa-redo mr-2"></i>New Project
+                    </button>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                        <i class="fas fa-user text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-8 animate-fade-in">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-blue-200 to-cyan-200 bg-clip-text text-transparent">
+                AI-Powered Construction Planner
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                Input your project details and get instant cost estimates, resource planning, and optimized timelines powered by AI.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Project Input -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="glass-panel rounded-2xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-clipboard-list text-blue-400 mr-3"></i>
+                            Project Details
+                        </h2>
+                        <span class="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded-full">Step 1</span>
+                    </div>
+
+                    <form id="projectForm" class="space-y-4" onsubmit="handleProjectSubmit(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Project Name</label>
+                            <input type="text" id="projectName" required 
+                                class="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 input-focus outline-none transition"
+                                placeholder="e.g., Downtown Office Complex">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Project Type</label>
+                                <select id="projectType" required onchange="updateMaterials()"
+                                    class="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-3 text-white outline-none input-focus">
+                                    <option value="">Select Type</option>
+                                    <option value="residential">Residential</option>
+                                    <option value="commercial">Commercial</option>
+                                    <option value="industrial">Industrial</option>
+                                    <option value="infrastructure">Infrastructure</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Size (sq ft)</label>
+                                <input type="number" id="projectSize" required min="100"
+                                    class="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 input-focus outline-none"
+                                    placeholder="5000">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Location</label>
+                            <select id="location" required
+                                class="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-3 text-white outline-none input-focus">
+                                <option value="">Select Region</option>
+                                <option value="urban">Urban (High Cost)</option>
+                                <option value="suburban">Suburban (Medium Cost)</option>
+                                <option value="rural">Rural (Lower Cost)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Complexity Level</label>
+                            <div class="flex space-x-2">
+                                <button type="button" onclick="setComplexity('low')" id="comp-low"
+                                    class="flex-1 py-2 px-3 rounded-lg border border-slate-600 text-sm hover:bg-slate-700 transition complexity-btn">
+                                    Low
+                                </button>
+                                <button type="button" onclick="setComplexity('medium')" id="comp-medium"
+                                    class="flex-1 py-2 px-3 rounded-lg border border-blue-500 bg-blue-500/20 text-sm text-blue-300 complexity-btn">
+                                    Medium
+                                </button>
+                                <button type="button" onclick="setComplexity('high')" id="comp-high"
+                                    class="flex-1 py-2 px-3 rounded-lg border border-slate-600 text-sm hover:bg-slate-700 transition complexity-btn">
+                                    High
+                                </button>
+                            </div>
+                            <input type="hidden" id="complexity" value="medium">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Primary Materials</label>
+                            <div id="materialsContainer" class="grid grid-cols-2 gap-2">
+                                <!-- Dynamic materials based on project type -->
+                            </div>
+                        </div>
+
+                        <button type="submit" 
+                            class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold py-4 rounded-lg transition transform hover:scale-[1.02] flex items-center justify-center space-x-2 neon-glow">
+                            <i class="fas fa-calculator"></i>
+                            <span>Generate AI Analysis</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">System Status</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-300">AI Model</span>
+                            <span class="text-green-400 text-sm flex items-center">
+                                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                                Active
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-300">Cost Database</span>
+                            <span class="text-blue-400 text-sm">2024 Q1 Updated</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-300">Projects Analyzed</span>
+                            <span class="text-white font-mono" id="projectCount">1,247</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel: Results Dashboard -->
+            <div class="lg:col-span-5 space-y-6" id="resultsPanel" style="display: none;">
+                
+                <!-- Cost Estimate Card -->
+                <div class="glass-panel rounded-2xl p-6 card-hover border-t-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold flex items-center">
+                            <i class="fas fa-rupee-sign text-green-400 mr-2"></i>
+                            Cost Estimate
+                        </h3>
+                        <span class="text-3xl font-bold text-green-400" id="totalCost">₹0</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Materials</span>
+                            <span class="text-white" id="materialsCost">₹0</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full progress-bar" id="materialsBar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Labor</span>
+                            <span class="text-white" id="laborCost">₹0</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="bg-cyan-500 h-2 rounded-full progress-bar" id="laborBar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Equipment</span>
+                            <span class="text-white" id="equipmentCost">₹0</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full progress-bar" id="equipmentBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <p class="text-xs text-blue-300 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Estimate accuracy: ±8% based on similar projects
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Resource Allocation -->
+                <div class="glass-panel rounded-2xl p-6 card-hover">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-users text-cyan-400 mr-2"></i>
+                        Resource Allocation
+                    </h3>
+                    <div class="space-y-4" id="resourceList">
+                        <!-- Dynamic resource items -->
+                    </div>
+                </div>
+
+                <!-- Timeline Visualization -->
+                <div class="glass-panel rounded-2xl p-6 card-hover">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-calendar-alt text-purple-400 mr-2"></i>
+                        Optimized Timeline
+                    </h3>
+                    <div class="space-y-3" id="timelineContainer">
+                        <!-- Dynamic Gantt-style timeline -->
+                    </div>
+                    <div class="mt-4 flex items-center justify-between text-sm text-slate-400">
+                        <span>Total Duration: <strong class="text-white" id="totalDuration">0 weeks</strong></span>
+                        <span class="text-green-400"><i class="fas fa-check-circle mr-1"></i>Optimized</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Center Panel: Placeholder Image (shown when no results) -->
+            <div class="lg:col-span-5" id="placeholderPanel">
+                <div class="glass-panel rounded-2xl overflow-hidden h-full min-h-[400px] relative">
+                    <a href="./other.html" aria-label="Open full project image in other file">
+                        <picture>
+                            <source srcset="/BuildKaro!.jpg" type="image/jpeg">
+                            <img src="/BuildKaro!.jpg" alt="" loading="lazy">
+                        </picture>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Panel: AI Assistant -->
+            <div class="lg:col-span-3">
+                <div class="glass-panel rounded-2xl h-[600px] flex flex-col sticky top-24">
+                    <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center robot-mascot">
+                                <i class="fas fa-robot text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-white">BuildBot AI</h3>
+                                <p class="text-xs text-green-400 flex items-center">
+                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1 animate-pulse"></span>
+                                    Online
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="clearChat()" class="text-slate-400 hover:text-white transition">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div class="chat-message bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                            <div class="flex items-start space-x-2">
+                                <i class="fas fa-robot text-blue-400 mt-1"></i>
+                                <div>
+                                    <p class="text-sm text-slate-300">
+                                        Hello! I'm BuildBot, your AI construction assistant. 
+                                    </p>
+                                    <p class="text-sm text-slate-300 mt-2">
+                                        Fill in your project details and I'll generate a complete cost analysis, resource plan, and optimized timeline. You can also ask me questions anytime!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 border-t border-slate-700/50">
+                        <div class="flex space-x-2">
+                            <input type="text" id="chatInput" 
+                                class="flex-1 bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 outline-none input-focus"
+                                placeholder="Ask about your project..."
+                                onkeypress="handleChatKeypress(event)">
+                            <button onclick="sendMessage()" 
+                                class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg transition">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <button onclick="quickAsk('How can I reduce costs?')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition">
+                                Reduce costs?
+                            </button>
+                            <button onclick="quickAsk('What are the risks?')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition">
+                                Risk analysis
+                            </button>
+                            <button onclick="quickAsk('Suggest materials')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition">
+                                Material tips
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-20 h-20 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 class="text-xl font-semibold text-white mb-2">AI Analyzing Project...</h3>
+            <p class="text-slate-400" id="loadingText">Calculating material costs...</p>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let currentProject = null;
+        let chatHistory = [];
+        
+        // Cost Database (Realistic 2024 construction costs per sq ft)
+        const costDatabase = {
+            residential: {
+                baseCost: 150,
+                materials: { concrete: 45, steel: 35, wood: 25, brick: 30, glass: 50 },
+                laborRate: 0.35,
+                equipmentRate: 0.15,
+                duration: 0.02 // weeks per sq ft
+            },
+            commercial: {
+                baseCost: 200,
+                materials: { concrete: 55, steel: 65, glass: 70, aluminum: 60, stone: 80 },
+                laborRate: 0.30,
+                equipmentRate: 0.20,
+                duration: 0.015
+            },
+            industrial: {
+                baseCost: 175,
+                materials: { concrete: 50, steel: 80, metal: 40, insulation: 25 },
+                laborRate: 0.32,
+                equipmentRate: 0.25,
+                duration: 0.018
+            },
+            infrastructure: {
+                baseCost: 250,
+                materials: { concrete: 70, steel: 90, asphalt: 40, aggregate: 20 },
+                laborRate: 0.28,
+                equipmentRate: 0.30,
+                duration: 0.025
+            }
+        };
+
+        const locationMultipliers = {
+            urban: 1.3,
+            suburban: 1.0,
+            rural: 0.85
+        };
+
+        const complexityMultipliers = {
+            low: 0.9,
+            medium: 1.0,
+            high: 1.25
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMaterials();
+        });
+
+        function updateMaterials() {
+            const type = document.getElementById('projectType').value || 'residential';
+            const container = document.getElementById('materialsContainer');
+            const materials = costDatabase[type]?.materials || {};
+            
+            container.innerHTML = Object.keys(materials).map(mat => `
+                <label class="flex items-center space-x-2 cursor-pointer hover:bg-slate-800/50 p-2 rounded transition">
+                    <input type="checkbox" name="materials" value="${mat}" checked 
+                        class="w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 bg-slate-800">
+                    <span class="text-sm text-slate-300 capitalize">${mat}</span>
+                </label>
+            `).join('');
+        }
+
+        function setComplexity(level) {
+            document.getElementById('complexity').value = level;
+            document.querySelectorAll('.complexity-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'bg-blue-500/20', 'text-blue-300');
+                btn.classList.add('border-slate-600');
+            });
+            const activeBtn = document.getElementById(`comp-${level}`);
+            activeBtn.classList.remove('border-slate-600');
+            activeBtn.classList.add('border-blue-500', 'bg-blue-500/20', 'text-blue-300');
+        }
+
+        async function handleProjectSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('projectName').value,
+                type: document.getElementById('projectType').value,
+                size: parseInt(document.getElementById('projectSize').value),
+                location: document.getElementById('location').value,
+                complexity: document.getElementById('complexity').value,
+                materials: Array.from(document.querySelectorAll('input[name="materials"]:checked')).map(cb => cb.value)
+            };
+
+            showLoading();
+            
+            // Simulate AI processing steps
+            const steps = [
+                'Analyzing project parameters...',
+                'Fetching regional cost data...',
+                'Calculating material requirements...',
+                'Optimizing resource allocation...',
+                'Generating timeline projections...',
+                'Finalizing AI recommendations...'
+            ];
+
+            for (let i = 0; i < steps.length; i++) {
+                document.getElementById('loadingText').textContent = steps[i];
+                await sleep(400);
+            }
+
+            const analysis = generateAnalysis(formData);
+            currentProject = { ...formData, ...analysis };
+            
+            hideLoading();
+            displayResults(analysis);
+            
+            // AI welcome message for specific project
+            setTimeout(() => {
+                addBotMessage(`I've analyzed "${formData.name}"! This ${formData.type} project of ${formData.size.toLocaleString()} sq ft has an estimated budget of ${formatCurrency(analysis.totalCost)}. The optimized timeline is ${analysis.duration} weeks. How can I help you optimize further?`);
+            }, 500);
+        }
+
+        function generateAnalysis(data) {
+            const db = costDatabase[data.type];
+            const locationMult = locationMultipliers[data.location];
+            const complexityMult = complexityMultipliers[data.complexity];
+            
+            // Calculate costs
+            const baseTotal = data.size * db.baseCost * locationMult * complexityMult;
+            const materialsCost = baseTotal * 0.45;
+            const laborCost = baseTotal * db.laborRate;
+            const equipmentCost = baseTotal * db.equipmentRate;
+            const totalCost = materialsCost + laborCost + equipmentCost;
+            
+            // Calculate duration
+            const baseDuration = Math.ceil(data.size * db.duration * complexityMult);
+            const optimizedDuration = Math.ceil(baseDuration * 0.85); // AI optimization reduces time
+            
+            // Resource calculation
+            const workers = Math.ceil(data.size / 2000);
+            const equipment = Math.ceil(data.size / 5000);
+            
+            // Timeline phases
+            const phases = [
+                { name: 'Planning & Permits', duration: Math.ceil(optimizedDuration * 0.15), color: 'bg-blue-500' },
+                { name: 'Foundation', duration: Math.ceil(optimizedDuration * 0.20), color: 'bg-cyan-500' },
+                { name: 'Structure', duration: Math.ceil(optimizedDuration * 0.35), color: 'bg-purple-500' },
+                { name: 'Finishing', duration: Math.ceil(optimizedDuration * 0.25), color: 'bg-pink-500' },
+                { name: 'Inspection', duration: Math.ceil(optimizedDuration * 0.05), color: 'bg-green-500' }
+            ];
+
+            return {
+                totalCost,
+                materialsCost,
+                laborCost,
+                equipmentCost,
+                duration: optimizedDuration,
+                workers,
+                equipment,
+                phases,
+                costPerSqFt: totalCost / data.size
+            };
+        }
+
+        function displayResults(analysis) {
+            // Hide placeholder, show results
+            document.getElementById('placeholderPanel').style.display = 'none';
+            document.getElementById('resultsPanel').style.display = 'block';
+            
+            // Animate cost numbers
+            animateValue('totalCost', 0, analysis.totalCost, 1500, true);
+            animateValue('materialsCost', 0, analysis.materialsCost, 1000, true);
+            animateValue('laborCost', 0, analysis.laborCost, 1000, true);
+            animateValue('equipmentCost', 0, analysis.equipmentCost, 1000, true);
+            
+            // Update progress bars
+            setTimeout(() => {
+                const total = analysis.totalCost;
+                document.getElementById('materialsBar').style.width = (analysis.materialsCost/total*100) + '%';
+                document.getElementById('laborBar').style.width = (analysis.laborCost/total*100) + '%';
+                document.getElementById('equipmentBar').style.width = (analysis.equipmentCost/total*100) + '%';
+            }, 100);
+
+            // Resource allocation
+            document.getElementById('resourceList').innerHTML = `
+                <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <i class="fas fa-hard-hat text-blue-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Construction Workers</p>
+                            <p class="text-xs text-slate-400">Skilled labor force</p>
+                        </div>
+                    </div>
+                    <span class="text-xl font-bold text-white">${analysis.workers}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                            <i class="fas fa-truck text-cyan-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Equipment Units</p>
+                            <p class="text-xs text-slate-400">Heavy machinery</p>
+                        </div>
+                    </div>
+                    <span class="text-xl font-bold text-white">${analysis.equipment}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                            <i class="fas fa-user-tie text-purple-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">Project Managers</p>
+                            <p class="text-xs text-slate-400">Supervision team</p>
+                        </div>
+                    </div>
+                    <span class="text-xl font-bold text-white">${Math.ceil(analysis.workers/10)}</span>
+                </div>
+            `;
+
+            // Timeline
+            document.getElementById('totalDuration').textContent = analysis.duration + ' weeks';
+            let timelineHTML = '';
+            let currentWeek = 0;
+            
+            analysis.phases.forEach((phase, idx) => {
+                const width = (phase.duration / analysis.duration) * 100;
+                timelineHTML += `
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-slate-300">${phase.name}</span>
+                            <span class="text-xs text-slate-400">${phase.duration} weeks</span>
+                        </div>
+                        <div class="h-8 bg-slate-800 rounded-lg overflow-hidden relative">
+                            <div class="${phase.color} h-full gantt-bar flex items-center px-3" 
+                                 style="width: 0%; margin-left: ${(currentWeek/analysis.duration)*100}%; position: absolute; left: 0; top: 0;">
+                                <span class="text-xs font-semibold text-white whitespace-nowrap opacity-0 animate-fade-in" style="animation-delay: ${idx*0.2}s; animation-fill-mode: forwards;">
+                                    Week ${currentWeek + 1}-${currentWeek + phase.duration}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                currentWeek += phase.duration;
+            });
+            
+            document.getElementById('timelineContainer').innerHTML = timelineHTML;
+            
+            // Animate timeline bars
+            setTimeout(() => {
+                const bars = document.querySelectorAll('.gantt-bar');
+                analysis.phases.forEach((phase, idx) => {
+                    const width = (phase.duration / analysis.duration) * 100;
+                    bars[idx].style.width = width + '%';
+                });
+            }, 300);
+
+            // Scroll to results
+            document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Chat Functions
+        function handleChatKeypress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function quickAsk(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addUserMessage(message);
+            input.value = '';
+
+            // Show typing indicator
+            showTyping();
+
+            // Generate AI response
+            await sleep(1000 + Math.random() * 1000);
+            hideTyping();
+            
+            const response = generateAIResponse(message);
+            addBotMessage(response);
+        }
+
+        function generateAIResponse(userMessage) {
+            const msg = userMessage.toLowerCase();
+            
+            if (!currentProject) {
+                if (msg.includes('cost') || msg.includes('price') || msg.includes('budget')) {
+                    return "I'd be happy to help with cost estimation! Please fill in your project details first (project type, size, location) and I'll generate a comprehensive cost breakdown with material, labor, and equipment estimates.";
+                }
+                return "Please submit your project details first so I can provide specific insights about your construction project!";
+            }
+
+            // Context-aware responses
+            if (msg.includes('reduce cost') || msg.includes('cheaper') || msg.includes('save money')) {
+                const savings = Math.round(currentProject.totalCost * 0.12);
+                return `Based on your ${currentProject.type} project, here are cost reduction strategies:\n\n1. **Material Optimization**: Switch to ${currentProject.location === 'urban' ? 'suburban suppliers' : 'bulk purchasing'} to save ~${formatCurrency(savings * 0.05)}\n2. **Labor Efficiency**: Use prefabrication for 15% of work - saves ~${formatCurrency(savings * 0.04)}\n3. **Phase Scheduling**: Avoid peak season (June-August) to save ~${formatCurrency(savings * 0.03)}\n\n**Total Potential Savings: ${formatCurrency(savings)}**`;
+            }
+            
+            if (msg.includes('risk') || msg.includes('delay') || msg.includes('problem')) {
+                return `Risk Analysis for "${currentProject.name}":\n\n🔴 **High Risk**: Weather delays (40% probability) - Add 2-week buffer\n🟡 **Medium Risk**: Material price volatility - Lock prices within 30 days\n🟡 **Medium Risk**: Labor shortage in ${currentProject.location} areas - Pre-book crews\n🟢 **Low Risk**: Permit delays - Submit 60 days early\n\n**Mitigation Strategy**: I recommend adding a 15% contingency fund of ${formatCurrency(currentProject.totalCost * 0.15)}.`;
+            }
+            
+            if (msg.includes('material') || msg.includes('supply')) {
+                return `For your ${currentProject.size.toLocaleString()} sq ft ${currentProject.type} project, I recommend:\n\n**Primary Materials** (${currentProject.materials.join(', ')}):\n- Order 3 weeks ahead to avoid delays\n- Consider ${currentProject.location === 'urban' ? 'local suppliers for concrete (transport costs)' : 'regional distributors for better pricing'}\n- Quality grade: ${currentProject.complexity === 'high' ? 'Premium (A-grade)' : 'Standard (B-grade)'}\n\n**Sustainability Option**: Green materials add 8% cost but reduce long-term energy costs by 20%.`;
+            }
+            
+            if (msg.includes('timeline') || msg.includes('schedule') || msg.includes('time')) {
+                return `Your optimized ${currentProject.duration}-week timeline:\n\n✅ **Critical Path**: Foundation → Structure → Finishing\n⚡ **Acceleration Possible**: Add second shift to save 2 weeks (+${formatCurrency(currentProject.laborCost * 0.25)})\n📅 **Best Start Date**: ${new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString()} (avoids weather delays)\n\n**Milestone Checkpoints**: Weeks ${Math.ceil(currentProject.duration*0.25)}, ${Math.ceil(currentProject.duration*0.5)}, ${Math.ceil(currentProject.duration*0.75)}`;
+            }
+            
+            if (msg.includes('compare') || msg.includes('benchmark')) {
+                const avgCost = currentProject.size * (currentProject.type === 'commercial' ? 220 : 160);
+                const diff = ((currentProject.totalCost - avgCost) / avgCost * 100).toFixed(1);
+                const comparison = diff > 0 ? `${diff}% above` : `${Math.abs(diff)}% below`;
+                
+                return `Benchmark Analysis:\n\nYour project cost: ${formatCurrency(currentProject.totalCost)}\nIndustry average: ${formatCurrency(avgCost)}\n**${comparison} market average**\n\nThis is ${Math.abs(diff) < 10 ? 'competitive' : diff > 0 ? 'higher due to complexity/location' : 'excellent value'} for a ${currentProject.complexity} complexity ${currentProject.type} project in ${currentProject.location} areas.`;
+            }
+
+            // Default contextual response
+            return `Regarding "${currentProject.name}" (${currentProject.size.toLocaleString()} sq ft ${currentProject.type}):\n\nYour project looks ${currentProject.complexity === 'high' ? 'ambitious' : 'well-scoped'} with a budget of ${formatCurrency(currentProject.totalCost)}. The ${currentProject.duration}-week timeline is aggressive but achievable with proper resource management.\n\nWould you like me to analyze specific aspects like risk factors, material alternatives, or labor optimization?`;
+        }
+
+        function addUserMessage(text) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-message flex justify-end';
+            div.innerHTML = `
+                <div class="bg-blue-600 rounded-lg p-3 max-w-[80%]">
+                    <p class="text-sm text-white">${escapeHtml(text)}</p>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addBotMessage(text) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-message bg-slate-800/50 rounded-lg p-3 border border-slate-700';
+            
+            // Convert newlines to breaks and bold markdown
+            const formatted = escapeHtml(text)
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-blue-300">$1</strong>')
+                .replace(/(🔴|🟡|🟢|⚡|✅|📅)/g, '<span class="text-lg">$1</span>');
+            
+            div.innerHTML = `
+                <div class="flex items-start space-x-2">
+                    <i class="fas fa-robot text-blue-400 mt-1"></i>
+                    <div class="text-sm text-slate-300 leading-relaxed">${formatted}</div>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.id = 'typingIndicator';
+            div.className = 'chat-message bg-slate-800/30 rounded-lg p-3 border border-slate-700/50 w-20';
+            div.innerHTML = `
+                <div class="typing-indicator flex space-x-1 justify-center">
+                    <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                    <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                    <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTyping() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        function clearChat() {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="chat-message bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-robot text-blue-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-slate-300">Chat cleared! How can I help you today?</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Utilities
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function formatCurrency(num) {
+            return '₹' + Math.round(num).toLocaleString();
+        }
+
+        function animateValue(id, start, end, duration, isCurrency) {
+            const obj = document.getElementById(id);
+            const range = end - start;
+            const minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            stepTime = Math.max(stepTime, minTimer);
+            
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+            
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                obj.innerHTML = isCurrency ? formatCurrency(value) : value;
+                if (value == end) clearInterval(timer);
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function resetProject() {
+            document.getElementById('projectForm').reset();
+            document.getElementById('resultsPanel').style.display = 'none';
+            document.getElementById('placeholderPanel').style.display = 'block';
+            currentProject = null;
+            setComplexity('medium');
+            updateMaterials();
+            clearChat();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
